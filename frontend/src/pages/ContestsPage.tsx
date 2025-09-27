@@ -162,7 +162,6 @@ const ContestsPage = () => {
                 className="flex-1"
                 onClick={() => {
                   setSelectedContest(contest);
-                  setStakeInput(contest.stake ?? "");
                   setShowContestModal(true);
                 }}
               >
