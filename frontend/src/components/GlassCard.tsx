@@ -1,5 +1,5 @@
-import { motion } from 'framer-motion';
-import { ReactNode } from 'react';
+import { motion } from "framer-motion";
+import { ReactNode } from "react";
 
 interface GlassCardProps {
   children: ReactNode;
@@ -7,10 +7,16 @@ interface GlassCardProps {
   glowEffect?: boolean;
 }
 
-const GlassCard = ({ children, className = '', glowEffect = false }: GlassCardProps) => {
+const GlassCard = ({
+  children,
+  className = "",
+  glowEffect = false,
+}: GlassCardProps) => {
   return (
     <motion.div
-      className={`glass rounded-lg p-6 relative overflow-hidden ${glowEffect ? 'animate-glow' : ''} ${className}`}
+      className={`glass rounded-lg p-6 relative overflow-hidden ${
+        glowEffect ? "" : ""
+      } ${className}`}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
@@ -19,27 +25,25 @@ const GlassCard = ({ children, className = '', glowEffect = false }: GlassCardPr
       {/* Scanning line effect */}
       <motion.div
         className="absolute top-0 left-0 w-full h-0.5 bg-cyber-green opacity-30"
-        animate={{ 
-          x: ['-100%', '100%'],
-          opacity: [0, 0.8, 0]
+        animate={{
+          x: ["-100%", "100%"],
+          opacity: [0, 0.8, 0],
         }}
-        transition={{ 
+        transition={{
           duration: 3,
           repeat: Infinity,
-          ease: 'linear',
-          delay: Math.random() * 2
+          ease: "linear",
+          delay: Math.random() * 2,
         }}
       />
-      
+
       {/* Corner accents */}
       <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-cyber-green opacity-60" />
       <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-cyber-green opacity-60" />
       <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-cyber-green opacity-60" />
       <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-cyber-green opacity-60" />
-      
-      <div className="relative z-10">
-        {children}
-      </div>
+
+      <div className="relative z-10">{children}</div>
     </motion.div>
   );
 };

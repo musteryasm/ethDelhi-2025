@@ -3,6 +3,7 @@ import { AnimatePresence } from "framer-motion";
 import LandingPage from "./pages/LandingPage";
 import AuthPage from "./pages/AuthPage";
 import DashboardPage from "./pages/DashboardPage";
+import ContestResultPage from "./pages/ContestResultPage";
 import ParticleBackground from "./components/ParticleBackground";
 import Web3AuthQR from "./pages/Page";
 
@@ -16,6 +17,7 @@ function App() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/contest-result" element={<ContestResultPage />} />
             <Route path="/self" element={<Web3AuthQR />} />
           </Routes>
         </AnimatePresence>
