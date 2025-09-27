@@ -6,6 +6,7 @@ import DashboardPage from "./pages/DashboardPage";
 import ContestResultPage from "./pages/ContestResultPage";
 import ParticleBackground from "./components/ParticleBackground";
 import Web3AuthQR from "./pages/Page";
+import BettingPage from "./pages/LiveBetting";
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/contest-result" element={<ContestResultPage />} />
             <Route path="/self" element={<Web3AuthQR />} />
+            <Route path="/live-betting" element={<BettingPage />} />
           </Routes>
         </AnimatePresence>
       </div>

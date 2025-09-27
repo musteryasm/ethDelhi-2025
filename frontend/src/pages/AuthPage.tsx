@@ -5,7 +5,7 @@ import Web3AuthStep from "../components/Web3AuthStep";
 import WalletConnectStep from "../components/WalletConnectStep";
 import VerificationStep from "../components/VerificationStep";
 import ProgressIndicator from "../components/ProgressIndicator";
-
+import aiWorkflow from "../api/ai/aiCoach";
 type UserInfo = { wallet?: string; goal?: string; nickname?: string };
 
 const AuthPage = () => {
@@ -44,7 +44,9 @@ const AuthPage = () => {
     }
   };
 
-  const handleVerificationSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleVerificationSubmit = async (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const goal = formData.get("goal") as string;
@@ -52,6 +54,8 @@ const AuthPage = () => {
 
     setUserInfo((prev) => ({ ...prev, goal, level }));
 
+    const response = await aiWorkflow("18-25", "Male", "Body fit", "Noob");
+    console.log(response);
     // Store user info in localStorage or send to backend
     localStorage.setItem(
       "cyberfit_user",
@@ -78,14 +82,7 @@ const AuthPage = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           className="text-center mb-8"
-        >
-          <h1 className="font-orbitron text-4xl font-bold mb-4 text-cyber-green">
-            Access Protocol
-          </h1>
-          <p className="text-gray-300">
-            Authenticate to enter the CyberFit ecosystem
-          </p>
-        </motion.div>
+        ></motion.div>
 
         <motion.div
           key={step}

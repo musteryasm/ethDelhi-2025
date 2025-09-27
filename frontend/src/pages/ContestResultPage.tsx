@@ -426,7 +426,7 @@ const ContestResultPage = () => {
             variant="secondary"
             onClick={() => navigate("/challenges")}
           >
-            View More Challenges
+            View More AI Challenges
           </NeonButton>
           <NeonButton>Share Results</NeonButton>
         </motion.div>

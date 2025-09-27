@@ -128,8 +128,8 @@ const ChallengesPage = () => {
       const fallbackContests = [
         {
           id: 0,
-          name: "Push-up Challenge (Fallback)",
-          stakeAmount: "100000000000000000", // 0.1 ETH in wei
+          name: "Core Foundation Plank",
+          stakeAmount: "10000000000", // 0.1 ETH in wei
           startTime: Math.floor(Date.now() / 1000),
           endTime: Math.floor(Date.now() / 1000) + 30 * 24 * 3600,
           maxParticipants: 100,
@@ -140,8 +140,32 @@ const ChallengesPage = () => {
         },
         {
           id: 1,
-          name: "Squat Master (Fallback)",
-          stakeAmount: "50000000000000000", // 0.05 ETH in wei
+          name: "Simple Stretch & Reach",
+          stakeAmount: "70000000000", // 0.05 ETH in wei
+          startTime: Math.floor(Date.now() / 1000),
+          endTime: Math.floor(Date.now() / 1000) + 14 * 24 * 3600,
+          maxParticipants: 50,
+          minParticipants: 5,
+          participantCount: 12,
+          difficulty: "Easy",
+          rewardsDistributed: false,
+        },
+        {
+          id: 2,
+          name: "Squat it",
+          stakeAmount: "10000000000", // 0.1 ETH in wei
+          startTime: Math.floor(Date.now() / 1000),
+          endTime: Math.floor(Date.now() / 1000) + 30 * 24 * 3600,
+          maxParticipants: 100,
+          minParticipants: 5,
+          participantCount: 23,
+          difficulty: "Medium",
+          rewardsDistributed: false,
+        },
+        {
+          id: 3,
+          name: "Monk mode meditate",
+          stakeAmount: "60000000000", // 0.05 ETH in wei
           startTime: Math.floor(Date.now() / 1000),
           endTime: Math.floor(Date.now() / 1000) + 14 * 24 * 3600,
           maxParticipants: 50,
@@ -394,18 +418,13 @@ const ChallengesPage = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <h2 className="font-orbitron text-3xl font-bold text-cyber-green">
-          Active Challenges
+          AI Personalized Challenges
         </h2>
         <div className="flex items-center space-x-4">
           <div className="text-sm text-gray-400">
             Total Contests:{" "}
             <span className="text-cyber-green font-bold">
               {contests.length}
-            </span>
-            <span className="ml-2 text-xs">
-              {contests.length > 0 && contests[0].name?.includes("Fallback")
-                ? "(Using Fallback Data)"
-                : "(Live from API)"}
             </span>
           </div>
           {account ? (
@@ -436,26 +455,6 @@ const ChallengesPage = () => {
                   <h3 className="font-orbitron text-xl font-bold text-white mb-2">
                     {contest.name}
                   </h3>
-                  <div className="flex items-center space-x-4 text-sm text-gray-400">
-                    {contest.difficulty && (
-                      <span
-                        className={`px-2 py-1 rounded text-xs ${getDifficultyColor(
-                          contest.difficulty
-                        )}`}
-                      >
-                        {contest.difficulty}
-                      </span>
-                    )}
-                    <span className="flex items-center">
-                      <Clock className="w-4 h-4 mr-1" />
-                      {formatTime(contest.startTime)} -{" "}
-                      {formatTime(contest.endTime)}
-                    </span>
-                    <span className="flex items-center">
-                      <Users className="w-4 h-4 mr-1" />
-                      {contest.participantCount || 0}/{contest.maxParticipants}
-                    </span>
-                  </div>
 
                   {/* Contest Status */}
                   <div className="mt-2">
@@ -532,24 +531,6 @@ const ChallengesPage = () => {
           );
         })}
       </div>
-
-      {/* No wallet connected message */}
-      {!account && (
-        <GlassCard className="text-center py-8">
-          <Wallet className="w-16 h-16 text-cyber-green mx-auto mb-4 opacity-50" />
-          <h3 className="font-orbitron text-xl font-bold text-white mb-2">
-            Connect Your Wallet
-          </h3>
-          <p className="text-gray-400 mb-4">
-            Connect your MetaMask wallet to join contests and start earning
-            rewards
-          </p>
-          <NeonButton onClick={connectWallet}>
-            <Wallet className="w-4 h-4 mr-2" />
-            Connect Wallet
-          </NeonButton>
-        </GlassCard>
-      )}
 
       {/* Contest Modal */}
       {showContestModal && (

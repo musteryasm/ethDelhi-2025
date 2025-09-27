@@ -63,7 +63,7 @@ const VerificationStep = ({ wallet, onSubmit }: VerificationStepProps) => {
           <div className="flex items-center space-x-2 mb-3">
             <User className="w-4 h-4 text-cyber-green" />
             <span className="text-gray-300 text-sm font-medium">
-              Select Your Level
+              Select Your Fitness Level
             </span>
           </div>
           <div className="grid grid-cols-3 gap-3">

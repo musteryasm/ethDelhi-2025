@@ -28,7 +28,7 @@ const ProfilePage = () => {
           transition={{ duration: 0.5 }}
         >
           <h1 className="font-orbitron text-3xl font-bold text-cyber-green mb-2">Profile Center</h1>
-          <p className="text-gray-400">Manage your CyberFit identity and track your progress</p>
+          <p className="text-gray-400">Manage your Fitter Coin identity and track your progress</p>
         </motion.div>
         <div className="flex space-x-2">
           <NeonButton size="sm" variant="secondary">

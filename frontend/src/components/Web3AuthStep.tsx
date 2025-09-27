@@ -33,7 +33,7 @@ const Web3AuthStep = ({ isConnecting, onAuth }: Web3AuthStepProps) => {
       <div className="space-y-3 mb-6 text-left">
         <div className="flex items-center space-x-3 text-sm">
           <Lock className="w-4 h-4 text-cyber-green" />
-          <span className="text-gray-300">End-to-end encrypted</span>
+          <span className="text-gray-300">End-to-end </span>
         </div>
         <div className="flex items-center space-x-3 text-sm">
           <Globe className="w-4 h-4 text-cyber-green" />

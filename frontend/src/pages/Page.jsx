@@ -111,7 +111,7 @@ export default function Web3AuthQR() {
         </motion.div>
 
         <h2 className="font-orbitron text-2xl font-bold mb-2 text-cyber-green">
-          Web3 Authentication
+          Self Authentication
         </h2>
         <p className="text-gray-300 text-sm mb-6">
           Scan the QR code with Self Protocol App to verify your identity
@@ -132,22 +132,6 @@ export default function Web3AuthQR() {
           )}
         </div>
 
-        {/* Features */}
-        <div className="space-y-3 mb-6 text-left">
-          <div className="flex items-center space-x-3 text-sm">
-            <Lock className="w-4 h-4 text-cyber-green" />
-            <span className="text-gray-300">End-to-end encrypted</span>
-          </div>
-          <div className="flex items-center space-x-3 text-sm">
-            <Globe className="w-4 h-4 text-cyber-green" />
-            <span className="text-gray-300">Decentralized identity</span>
-          </div>
-          <div className="flex items-center space-x-3 text-sm">
-            <Shield className="w-4 h-4 text-cyber-green" />
-            <span className="text-gray-300">Zero-knowledge proofs</span>
-          </div>
-        </div>
-
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-2 mb-4">
           <NeonButton onClick={copyToClipboard} className="flex-1" size="md">
@@ -156,16 +140,6 @@ export default function Web3AuthQR() {
           <NeonButton onClick={openSelfApp} className="flex-1" size="md">
             Open Self App
           </NeonButton>
-        </div>
-
-        {/* User Address */}
-        <div className="flex flex-col items-center gap-2 mt-2">
-          <span className="text-gray-500 text-xs uppercase tracking-wide">
-            User Address
-          </span>
-          <div className="bg-gray-800 rounded-md px-3 py-2 w-full text-center break-all text-sm font-mono text-cyber-green border border-gray-700">
-            {userId || <span className="text-gray-500">Not connected</span>}
-          </div>
         </div>
 
         {/* Toast */}
