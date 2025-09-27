@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Contest API Test</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0F0F1A;
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .title {
+            font-family: 'Orbitron', monospace;
+            font-size: 2.5rem;
+            color: #39FF14;
+            text-shadow: 0 0 10px #39FF14, 0 0 20px #39FF14;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #cccccc;
+            font-size: 1.1rem;
+        }
+
+        .section {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(57, 255, 20, 0.2);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .section h2 {
+            color: #39FF14;
+            font-family: 'Orbitron', monospace;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #39FF14;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(57, 255, 20, 0.3);
+            border-radius: 6px;
+            color: #ffffff;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #39FF14;
+            box-shadow: 0 0 8px rgba(57, 255, 20, 0.3);
+        }
+
+        input::placeholder {
+            color: #888;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #39FF14, #00ff88);
+            color: #000;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(57, 255, 20, 0.4);
+        }
+
+        .btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #ff6b35, #ff8e53);
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #ff4757, #ff6b7d);
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            border-left: 4px solid #39FF14;
+        }
+
+        .result h4 {
+            color: #39FF14;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .result pre {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 12px;
+            border-radius: 5px;
+            overflow-x: auto;
+            color: #cccccc;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: #39FF14;
+            padding: 10px;
+        }
+
+        .spinner {
+            border: 2px solid rgba(57, 255, 20, 0.3);
+            border-top: 2px solid #39FF14;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .contest-info {
+            background: rgba(57, 255, 20, 0.1);
+            border: 1px solid rgba(57, 255, 20, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .contest-info h4 {
+            color: #39FF14;
+            margin-bottom: 10px;
+        }
+
+        .contest-info p {
+            color: #cccccc;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .step-counter {
+            background: rgba(57, 255, 20, 0.2);
+            color: #39FF14;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .address-input {
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .quick-fill {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .quick-fill button {
+            padding: 5px 10px;
+            font-size: 12px;
+            background: rgba(57, 255, 20, 0.2);
+            color: #39FF14;
+            border: 1px solid rgba(57, 255, 20, 0.3);
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-active { background: #39FF14; }
+        .status-ended { background: #ff4757; }
+        .status-pending { background: #ffa502; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">Complete Contest Lifecycle Test</h1>
+            <p class="subtitle">Test Create → Join → Distribute → Check Status</p>
+        </div>
+
+        <!-- Step 1: Create Contest -->
+        <div class="section">
+            <h2><span class="step-counter">1</span>Create Contest</h2>
+            <form id="createForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="name">Contest Name</label>
+                        <input type="text" id="name" name="name" value="Test Contest 2024" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="stakeAmount">Stake Amount (wei)</label>
+                        <input type="number" id="stakeAmount" name="stakeAmount" value="1000000000000000000" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="startTime">Start Time</label>
+                        <input type="number" id="startTime" name="startTime" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="endTime">End Time</label>
+                        <input type="number" id="endTime" name="endTime" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="maxParticipants">Max Participants</label>
+                        <input type="number" id="maxParticipants" name="maxParticipants" value="10" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="minParticipants">Min Participants</label>
+                        <input type="number" id="minParticipants" name="minParticipants" value="3" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn">Create Contest</button>
+                <button type="button" class="btn btn-secondary" onclick="getAllContests()">Get All Contests</button>
+            </form>
+            <div class="loading" id="createLoading" style="display: none;"><div class="spinner"></div>Creating contest...</div>
+            <div class="result" id="createResult" style="display: none;">
+                <h4>Result</h4>
+                <pre></pre>
+            </div>
+        </div>
+
+        <!-- Contest Info Display -->
+        <div class="contest-info" id="contestInfo" style="display: none;">
+            <h4>Current Contest</h4>
+            <p><strong>Contest ID:</strong> <span id="currentContestId">-</span></p>
+            <p><strong>Name:</strong> <span id="currentContestName">-</span></p>
+            <p><strong>Stake Amount:</strong> <span id="currentStakeAmount">-</span> wei</p>
+            <p><strong>Status:</strong> <span id="currentStatus">-</span></p>
+        </div>
+
+        <!-- Step 2: Join Contest -->
+        <div class="section">
+            <h2><span class="step-counter">2</span>Join Contest (Simulate Participants)</h2>
+            <div class="form-group">
+                <label for="joinContestId">Contest ID to Join</label>
+                <input type="number" id="joinContestId" placeholder="Enter contest ID" required>
+            </div>
+            <div class="form-group">
+                <label for="userAddress">User Address (Ethereum Address)</label>
+                <input type="text" id="userAddress" class="address-input" placeholder="0x..." required>
+                <div class="quick-fill">
+                    <button onclick="fillDummyAddress(1)">Dummy User 1</button>
+                    <button onclick="fillDummyAddress(2)">Dummy User 2</button>
+                    <button onclick="fillDummyAddress(3)">Dummy User 3</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="joinStakeAmount">Stake Amount (must match contest)</label>
+                <input type="number" id="joinStakeAmount" value="1000000000000000000" required>
+            </div>
+            <button onclick="joinContest()" class="btn">Join Contest</button>
+            <button onclick="getContestDetails()" class="btn btn-secondary">Check Contest Status</button>
+            <div class="loading" id="joinLoading" style="display: none;"><div class="spinner"></div>Processing join request...</div>
+            <div class="result" id="joinResult" style="display: none;">
+                <h4>Result</h4>
+                <pre></pre>
+            </div>
+        </div>
+
+        <!-- Step 3: Distribute Rewards -->
+        <div class="section">
+            <h2><span class="step-counter">3</span>Distribute Rewards</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="distributeContestId">Contest ID</label>
+                    <input type="number" id="distributeContestId" placeholder="Enter contest ID" required>
+                </div>
+                <div class="form-group">
+                    <label for="winner1">1st Place Winner Address</label>
+                    <input type="text" id="winner1" class="address-input" placeholder="0x..." required>
+                </div>
+                <div class="form-group">
+                    <label for="winner2">2nd Place Winner Address</label>
+                    <input type="text" id="winner2" class="address-input" placeholder="0x..." required>
+                </div>
+                <div class="form-group">
+                    <label for="winner3">3rd Place Winner Address</label>
+                    <input type="text" id="winner3" class="address-input" placeholder="0x..." required>
+                </div>
+            </div>
+            <button onclick="distributeRewards()" class="btn btn-danger">Distribute Rewards</button>
+            <div class="loading" id="distributeLoading" style="display: none;"><div class="spinner"></div>Distributing rewards...</div>
+            <div class="result" id="distributeResult" style="display: none;">
+                <h4>Result</h4>
+                <pre></pre>
+            </div>
+        </div>
+
+        <!-- Step 4: Final Status Check -->
+        <div class="section">
+            <h2><span class="step-counter">4</span>Final Status & Statistics</h2>
+            <div class="form-group">
+                <label for="statusContestId">Contest ID to Check</label>
+                <input type="number" id="statusContestId" placeholder="Enter contest ID" required>
+            </div>
+            <button onclick="getContestStats()" class="btn">Get Contest Statistics</button>
+            <button onclick="checkUserJoinStatus()" class="btn btn-secondary">Check User Join Status</button>
+            <div class="loading" id="statusLoading" style="display: none;"><div class="spinner"></div>Fetching status...</div>
+            <div class="result" id="statusResult" style="display: none;">
+                <h4>Result</h4>
+                <pre></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3001/api';
+        let currentContestId = null;
+
+        // Set default times
+        const now = Math.floor(Date.now() / 1000);
+        document.getElementById('startTime').value = now;
+        document.getElementById('endTime').value = now + 3600; // 1 hour later
+
+        // Dummy addresses for testing
+        const dummyAddresses = [
+            '0x742d35Cc6639C0532fBa96A4c2aE1b2b1D5b9F5C',
+            '0x8ba1f109551bD432803012645Hac136c9.interfaces',
+            '0x123456789abcdef123456789abcdef123456789a'
+        ];
+
+        function fillDummyAddress(userNum) {
+            document.getElementById('userAddress').value = dummyAddresses[userNum - 1];
+        }
+
+        // Auto-fill winner addresses
+        function autoFillWinners() {
+            document.getElementById('winner1').value = dummyAddresses[0];
+            document.getElementById('winner2').value = dummyAddresses[1];
+            document.getElementById('winner3').value = dummyAddresses[2];
+        }
+
+        // Create contest
+        document.getElementById('createForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await handleApiCall('createLoading', 'createResult', async () => {
+                const formData = new FormData(e.target);
+                const data = Object.fromEntries(formData);
+                
+                const response = await fetch(`${API_BASE}/contests/create`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.contestId) {
+                    currentContestId = result.contestId;
+                    updateContestInfo(result.contestId, data.name, data.stakeAmount);
+                    // Auto-fill other forms
+                    document.getElementById('joinContestId').value = result.contestId;
+                    document.getElementById('distributeContestId').value = result.contestId;
+                    document.getElementById('statusContestId').value = result.contestId;
+                    document.getElementById('joinStakeAmount').value = data.stakeAmount;
+                    autoFillWinners();
+                }
+                
+                return { response, result };
+            });
+        });
+
+        // Join contest
+        async function joinContest() {
+            await handleApiCall('joinLoading', 'joinResult', async () => {
+                const contestId = document.getElementById('joinContestId').value;
+                const userAddress = document.getElementById('userAddress').value;
+                const stakeAmount = document.getElementById('joinStakeAmount').value;
+                
+                const response = await fetch(`${API_BASE}/contests/${contestId}/join`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userAddress, stakeAmount })
+                });
+                
+                const result = await response.json();
+                return { response, result };
+            });
+        }
+
+        // Distribute rewards
+        async function distributeRewards() {
+            await handleApiCall('distributeLoading', 'distributeResult', async () => {
+                const contestId = document.getElementById('distributeContestId').value;
+                const winner1 = document.getElementById('winner1').value;
+                const winner2 = document.getElementById('winner2').value;
+                const winner3 = document.getElementById('winner3').value;
+                
+                const response = await fetch(`${API_BASE}/contests/distribute`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contestId, winner1, winner2, winner3 })
+                });
+                
+                const result = await response.json();
+                return { response, result };
+            });
+        }
+
+        // Get contest details
+        async function getContestDetails() {
+            const contestId = document.getElementById('joinContestId').value;
+            await handleApiCall('joinLoading', 'joinResult', async () => {
+                const response = await fetch(`${API_BASE}/contests/${contestId}`);
+                const result = await response.json();
+                return { response, result };
+            });
+        }
+
+        // Get contest statistics
+        async function getContestStats() {
+            await handleApiCall('statusLoading', 'statusResult', async () => {
+                const contestId = document.getElementById('statusContestId').value;
+                const response = await fetch(`${API_BASE}/contests/${contestId}/stats`);
+                const result = await response.json();
+                return { response, result };
+            });
+        }
+
+        // Check user join status
+        async function checkUserJoinStatus() {
+            await handleApiCall('statusLoading', 'statusResult', async () => {
+                const contestId = document.getElementById('statusContestId').value;
+                const userAddress = document.getElementById('userAddress').value || dummyAddresses[0];
+                const response = await fetch(`${API_BASE}/contests/${contestId}/joined/${userAddress}`);
+                const result = await response.json();
+                return { response, result };
+            });
+        }
+
+        // Get all contests
+        async function getAllContests() {
+            await handleApiCall('createLoading', 'createResult', async () => {
+                const response = await fetch(`${API_BASE}/contests`);
+                const result = await response.json();
+                return { response, result };
+            });
+        }
+
+        // Generic API call handler
+        async function handleApiCall(loadingId, resultId, apiCall) {
+            const loading = document.getElementById(loadingId);
+            const result = document.getElementById(resultId);
+            
+            loading.style.display = 'block';
+            result.style.display = 'none';
+            
+            try {
+                const { response, result: data } = await apiCall();
+                
+                const resultElement = document.getElementById(resultId);
+                resultElement.querySelector('h4').textContent = response.ok ? '✅ Success!' : '❌ Error';
+                resultElement.querySelector('pre').textContent = JSON.stringify(data, null, 2);
+                resultElement.style.borderLeftColor = response.ok ? '#39FF14' : '#ff4757';
+                resultElement.style.display = 'block';
+                
+            } catch (error) {
+                const resultElement = document.getElementById(resultId);
+                resultElement.querySelector('h4').textContent = '❌ Network Error';
+                resultElement.querySelector('pre').textContent = `Error: ${error.message}`;
+                resultElement.style.borderLeftColor = '#ff4757';
+                resultElement.style.display = 'block';
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        // Update contest info display
+        function updateContestInfo(contestId, name, stakeAmount) {
+            document.getElementById('currentContestId').textContent = contestId;
+            document.getElementById('currentContestName').textContent = name;
+            document.getElementById('currentStakeAmount').textContent = stakeAmount;
+            document.getElementById('currentStatus').innerHTML = '<span class="status-indicator status-active"></span>Active';
+            document.getElementById('contestInfo').style.display = 'block';
+        }
+
+        // Test health check on load
+        window.addEventListener('load', async () => {
+            try {
+                const response = await fetch(`${API_BASE}`);
+                const data = await response.json();
+                console.log('✅ Server health check:', data);
+            } catch (error) {
+                console.error('❌ Server connection failed:', error);
+                alert('⚠️ Server not running! Make sure to start server with: node server.js');
+            }
+        });
+    </script>
+</body>
+</html>
