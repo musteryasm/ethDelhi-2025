@@ -56,9 +56,7 @@ const Web3AuthStep = ({ isConnecting, onAuth }: Web3AuthStepProps) => {
         )}
       </NeonButton>
 
-      <div className="mt-4 text-xs text-gray-500">
-        Powered by blockchain technology
-      </div>
+
     </GlassCard>
   );
 };

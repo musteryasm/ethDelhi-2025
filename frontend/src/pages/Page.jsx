@@ -89,9 +89,9 @@ export default function Web3AuthQR() {
       console.error("Error logging data:", error);
     } finally {
       setTimeout(() => {
-        navigate("/dashboard");
+        navigate("/auth");
         setTimeout(() => window.location.reload(), 100);
-      }, 10000);
+      }, 500);
     }
   };
 
@@ -151,7 +151,7 @@ export default function Web3AuthQR() {
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-2 mb-4">
           <NeonButton onClick={copyToClipboard} className="flex-1" size="md">
-            {linkCopied ? "Copied!" : "Copy Universal Link"}
+            {linkCopied ? "Copied!" : "Copy Link"}
           </NeonButton>
           <NeonButton onClick={openSelfApp} className="flex-1" size="md">
             Open Self App
@@ -166,10 +166,6 @@ export default function Web3AuthQR() {
           <div className="bg-gray-800 rounded-md px-3 py-2 w-full text-center break-all text-sm font-mono text-cyber-green border border-gray-700">
             {userId || <span className="text-gray-500">Not connected</span>}
           </div>
-        </div>
-
-        <div className="mt-4 text-xs text-gray-500">
-          Powered by blockchain technology
         </div>
 
         {/* Toast */}

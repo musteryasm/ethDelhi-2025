@@ -152,7 +152,6 @@ const ContestsPage = () => {
                 <div className="text-cyber-green font-bold text-lg mb-1">
                   {contest.stake}
                 </div>
-                <div className="text-xs text-gray-400">Entry Fee</div>
               </div>
             </div>
 
@@ -231,14 +230,7 @@ const ContestsPage = () => {
             )}
 
             <div className="space-y-4">
-              <div className="flex items-center space-x-3">
-                <label className="text-sm text-gray-300 w-24">Entry Fee</label>
-                <input
-                  value={stakeInput}
-                  onChange={(e) => setStakeInput(e.target.value)}
-                  className="flex-1 bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white"
-                />
-              </div>
+              <div className="flex items-center space-x-3"></div>
 
               <div className="flex space-x-4">
                 <NeonButton

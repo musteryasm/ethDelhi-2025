@@ -68,7 +68,7 @@ const LandingPage = () => {
             <NeonButton 
               size="lg" 
               variant="primary"
-              onClick={() => navigate('/auth')}
+              onClick={() => navigate('/self')}
               className="animate-pulse-glow"
             >
               Enter the Challenge

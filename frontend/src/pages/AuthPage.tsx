@@ -1,10 +1,10 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-import Web3AuthStep from '../components/Web3AuthStep';
-import WalletConnectStep from '../components/WalletConnectStep';
-import VerificationStep from '../components/VerificationStep';
-import ProgressIndicator from '../components/ProgressIndicator';
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import Web3AuthStep from "../components/Web3AuthStep";
+import WalletConnectStep from "../components/WalletConnectStep";
+import VerificationStep from "../components/VerificationStep";
+import ProgressIndicator from "../components/ProgressIndicator";
 
 type UserInfo = { wallet?: string; goal?: string; nickname?: string };
 
@@ -14,33 +14,32 @@ const AuthPage = () => {
   const [userInfo, setUserInfo] = useState<UserInfo>({});
   const navigate = useNavigate();
 
-  const handleWeb3Auth = () => {
-    setIsConnecting(true);
-    setTimeout(() => {
-      setIsConnecting(false);
-      setStep(2);
-    }, 2000);
-  };
-
   const handleWalletConnect = async () => {
     setIsConnecting(true);
     try {
       const { ethereum } = window as typeof window & {
-        ethereum?: { request?: (args: { method: string; params?: unknown[] }) => Promise<any> };
+        ethereum?: {
+          request?: (args: {
+            method: string;
+            params?: unknown[];
+          }) => Promise<any>;
+        };
       };
-      
+
       if (!ethereum) {
-        alert('MetaMask not found. Please install MetaMask to continue.');
+        alert("MetaMask not found. Please install MetaMask to continue.");
         setIsConnecting(false);
         return;
       }
-      
-      const accounts = await ethereum.request!({ method: 'eth_requestAccounts' });
+
+      const accounts = await ethereum.request!({
+        method: "eth_requestAccounts",
+      });
       setUserInfo((prev) => ({ ...prev, wallet: accounts[0] }));
       setIsConnecting(false);
-      setStep(3);
+      setStep(2);
     } catch (error) {
-      console.error('Wallet connection failed:', error);
+      console.error("Wallet connection failed:", error);
       setIsConnecting(false);
     }
   };
@@ -48,20 +47,23 @@ const AuthPage = () => {
   const handleVerificationSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const goal = formData.get('goal') as string;
-    const nickname = formData.get('nickname') as string;
-    
-    setUserInfo((prev) => ({ ...prev, goal, nickname }));
-    
+    const goal = formData.get("goal") as string;
+    const level = formData.get("level") as string;
+
+    setUserInfo((prev) => ({ ...prev, goal, level }));
+
     // Store user info in localStorage or send to backend
-    localStorage.setItem('cyberfit_user', JSON.stringify({
-      ...userInfo,
-      goal,
-      nickname,
-      timestamp: Date.now()
-    }));
-    
-    navigate('/dashboard');
+    localStorage.setItem(
+      "cyberfit_user",
+      JSON.stringify({
+        ...userInfo,
+        goal,
+        level,
+        timestamp: Date.now(),
+      })
+    );
+
+    navigate("/dashboard");
   };
 
   const handleBack = () => {
@@ -92,29 +94,22 @@ const AuthPage = () => {
           transition={{ duration: 0.3 }}
         >
           {step === 1 && (
-            <Web3AuthStep 
-              isConnecting={isConnecting} 
-              onAuth={handleWeb3Auth} 
-            />
-          )}
-
-          {step === 2 && (
-            <WalletConnectStep 
-              isConnecting={isConnecting} 
+            <WalletConnectStep
+              isConnecting={isConnecting}
               onConnect={handleWalletConnect}
               onBack={handleBack}
             />
           )}
 
-          {step === 3 && (
-            <VerificationStep 
+          {step === 2 && (
+            <VerificationStep
               wallet={userInfo.wallet}
               onSubmit={handleVerificationSubmit}
             />
           )}
         </motion.div>
 
-        <ProgressIndicator currentStep={step} totalSteps={3} />
+        <ProgressIndicator currentStep={step} totalSteps={2} />
       </div>
     </div>
   );

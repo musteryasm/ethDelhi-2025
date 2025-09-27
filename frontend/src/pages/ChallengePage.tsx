@@ -6,9 +6,8 @@ import GlassCard from "../components/GlassCard";
 import NeonButton from "../components/NeonButton";
 import outputSquatGif from "../gifs/output_squat.gif";
 
-// Contract configuration
 const CONTRACT_ADDRESS = "0xE5f2A565Ee0Aa9836B4c80a07C8b32aAd7978e22";
-const SEPOLIA_CHAIN_ID = "0xaa36a7"; // 11155111 in decimal
+const SEPOLIA_CHAIN_ID = "0xaa36a7";
 const CONTRACT_ABI = [
   "function joinContest(uint256 contestId) external payable",
   "function getParticipants(uint256 contestId) external view returns (address[])",
@@ -17,7 +16,6 @@ const CONTRACT_ABI = [
 ];
 
 const ChallengesPage = () => {
-  // Existing state
   const [showContestModal, setShowContestModal] = useState(false);
   const [showCameraModal, setShowCameraModal] = useState(false);
   const [selectedChallenge, setSelectedChallenge] = useState(null);
@@ -25,7 +23,6 @@ const ChallengesPage = () => {
   const [isStarting, setIsStarting] = useState(false);
   const [selectedContest, setSelectedContest] = useState<any | null>(null);
 
-  // New Web3 state
   const [account, setAccount] = useState(null);
   const [contract, setContract] = useState(null);
   const [contests, setContests] = useState([]);
@@ -609,14 +606,7 @@ const ChallengesPage = () => {
             )}
 
             <div className="space-y-4">
-              <div className="flex items-center space-x-3">
-                <label className="text-sm text-gray-300 w-24">Entry Fee</label>
-                <input
-                  value={stakeInput}
-                  onChange={(e) => setStakeInput(e.target.value)}
-                  className="flex-1 bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white"
-                />
-              </div>
+              <div className="flex items-center space-x-3"></div>
 
               <div className="flex space-x-4">
                 <NeonButton
