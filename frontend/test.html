@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contest API Test</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0F0F1A;
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(57, 255, 20, 0.2);
+            border-radius: 15px;
+            padding: 30px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .title {
+            font-family: 'Orbitron', monospace;
+            font-size: 2.5rem;
+            color: #39FF14;
+            text-shadow: 0 0 10px #39FF14, 0 0 20px #39FF14;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #cccccc;
+            font-size: 1.1rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #39FF14;
+            font-weight: 500;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(57, 255, 20, 0.3);
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #39FF14;
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.3);
+        }
+
+        input::placeholder {
+            color: #888;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #39FF14, #00ff88);
+            color: #000;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(57, 255, 20, 0.4);
+        }
+
+        .btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            border-left: 4px solid #39FF14;
+        }
+
+        .result h3 {
+            color: #39FF14;
+            margin-bottom: 15px;
+        }
+
+        .result pre {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            color: #cccccc;
+            font-size: 14px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: #39FF14;
+        }
+
+        .spinner {
+            border: 2px solid rgba(57, 255, 20, 0.3);
+            border-top: 2px solid #39FF14;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .api-info {
+            background: rgba(57, 255, 20, 0.1);
+            border: 1px solid rgba(57, 255, 20, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 30px;
+        }
+
+        .api-info h3 {
+            color: #39FF14;
+            margin-bottom: 10px;
+        }
+
+        .api-info p {
+            color: #cccccc;
+            margin-bottom: 5px;
+        }
+
+        .endpoint {
+            font-family: monospace;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px 10px;
+            border-radius: 4px;
+            color: #39FF14;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">Contest API Test</h1>
+            <p class="subtitle">Test the contest creation and management endpoints</p>
+        </div>
+
+        <div class="api-info">
+            <h3>API Information</h3>
+            <p><strong>Base URL:</strong> <span class="endpoint">http://localhost:3001/api</span></p>
+            <p><strong>Create Contest:</strong> <span class="endpoint">POST /contests/create</span></p>
+            <p><strong>Get Contest:</strong> <span class="endpoint">GET /contests/:id</span></p>
+            <p><strong>Get All Contests:</strong> <span class="endpoint">GET /contests</span></p>
+        </div>
+
+        <form id="contestForm">
+            <div class="form-group">
+                <label for="name">Contest Name</label>
+                <input type="text" id="name" name="name" placeholder="e.g., CyberFit Challenge 2024" required>
+            </div>
+
+            <div class="form-group">
+                <label for="stakeAmount">Stake Amount (in wei)</label>
+                <input type="number" id="stakeAmount" name="stakeAmount" placeholder="1000000000000000000" required>
+                <small style="color: #888; font-size: 12px;">1 ETH = 1000000000000000000 wei</small>
+            </div>
+
+            <div class="form-group">
+                <label for="startTime">Start Time (Unix timestamp)</label>
+                <input type="number" id="startTime" name="startTime" placeholder="1700000000" required>
+                <small style="color: #888; font-size: 12px;">Current time: <span id="currentTime"></span></small>
+            </div>
+
+            <div class="form-group">
+                <label for="endTime">End Time (Unix timestamp)</label>
+                <input type="number" id="endTime" name="endTime" placeholder="1700086400" required>
+                <small style="color: #888; font-size: 12px;">1 day = 86400 seconds</small>
+            </div>
+
+            <div class="form-group">
+                <label for="maxParticipants">Max Participants</label>
+                <input type="number" id="maxParticipants" name="maxParticipants" placeholder="100" required>
+            </div>
+
+            <div class="form-group">
+                <label for="minParticipants">Min Participants</label>
+                <input type="number" id="minParticipants" name="minParticipants" placeholder="5" required>
+            </div>
+
+            <button type="submit" class="btn" id="submitBtn">
+                Create Contest
+            </button>
+        </form>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            Creating contest...
+        </div>
+
+        <div class="result" id="result" style="display: none;">
+            <h3>API Response</h3>
+            <pre id="resultContent"></pre>
+        </div>
+    </div>
+
+    <script>
+        // Set current time
+        document.getElementById('currentTime').textContent = Math.floor(Date.now() / 1000);
+        
+        // Set default values
+        const now = Math.floor(Date.now() / 1000);
+        document.getElementById('startTime').value = now;
+        document.getElementById('endTime').value = now + 86400; // 1 day later
+
+        document.getElementById('contestForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+            const resultContent = document.getElementById('resultContent');
+            
+            // Show loading
+            submitBtn.disabled = true;
+            loading.style.display = 'block';
+            result.style.display = 'none';
+            
+            try {
+                const formData = new FormData(e.target);
+                const data = {
+                    name: formData.get('name'),
+                    stakeAmount: formData.get('stakeAmount'),
+                    startTime: formData.get('startTime'),
+                    endTime: formData.get('endTime'),
+                    maxParticipants: formData.get('maxParticipants'),
+                    minParticipants: formData.get('minParticipants')
+                };
+                
+                console.log('Sending data:', data);
+                
+                const response = await fetch('http://localhost:3001/api/contests/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const responseData = await response.json();
+                
+                // Show result
+                resultContent.textContent = JSON.stringify(responseData, null, 2);
+                result.style.display = 'block';
+                
+                if (response.ok) {
+                    result.style.borderLeftColor = '#39FF14';
+                    result.querySelector('h3').textContent = '✅ Success!';
+                } else {
+                    result.style.borderLeftColor = '#ff4444';
+                    result.querySelector('h3').textContent = '❌ Error';
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                resultContent.textContent = `Error: ${error.message}`;
+                result.style.display = 'block';
+                result.style.borderLeftColor = '#ff4444';
+                result.querySelector('h3').textContent = '❌ Network Error';
+            } finally {
+                // Hide loading
+                submitBtn.disabled = false;
+                loading.style.display = 'none';
+            }
+        });
+
+        // Test other endpoints
+        async function testGetContests() {
+            try {
+                const response = await fetch('http://localhost:3001/api/contests');
+                const data = await response.json();
+                console.log('All contests:', data);
+            } catch (error) {
+                console.error('Error fetching contests:', error);
+            }
+        }
+
+        // Test health check
+        async function testHealth() {
+            try {
+                const response = await fetch('http://localhost:3001/api');
+                const data = await response.json();
+                console.log('Health check:', data);
+            } catch (error) {
+                console.error('Error health check:', error);
+            }
+        }
+
+        // Run tests on page load
+        window.addEventListener('load', () => {
+            testHealth();
+            testGetContests();
+        });
+    </script>
+</body>
+</html>
