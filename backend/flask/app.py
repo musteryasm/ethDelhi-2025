@@ -19,16 +19,19 @@ counter = 0
 status = True
 
 # Contest parameters
-contest_duration = 180  # 180 seconds
+contest_duration = 90  # 180 seconds
 contest_start_time = None
 contest_active = False
 contest_ended = False
 participant_count = random.randint(15, 25)  # Simulated participant count
 
-# Video source (0 = webcam)
-cap = cv2.VideoCapture(0)
-cap.set(3, 800)
-cap.set(4, 480)
+# Session management
+last_heartbeat = None
+heart_beat_timeout = 10  # seconds
+cleanup_timer = None
+
+# Video source (0 = webcam) - Initialize as None, will be created when needed
+cap = None
 
 def start_contest():
     global contest_start_time, contest_active, contest_ended, counter
@@ -47,9 +50,42 @@ def start_contest():
     timer_thread.start()
 
 def end_contest():
-    global contest_active, contest_ended
+    global contest_active, contest_ended, cap, cleanup_timer
     contest_active = False
     contest_ended = True
+    # Release camera when contest ends
+    if cap is not None:
+        cap.release()
+        cap = None
+    # Cancel cleanup timer if it exists
+    if cleanup_timer is not None:
+        cleanup_timer.cancel()
+        cleanup_timer = None
+
+def cleanup_session():
+    """Called when browser/tab is closed or becomes inactive"""
+    global last_heartbeat, cleanup_timer
+    print("Session cleanup triggered - browser/tab likely closed")
+    end_contest()
+    # Reset for next session
+    last_heartbeat = None
+    
+def schedule_cleanup():
+    """Schedule cleanup if no heartbeat received"""
+    global cleanup_timer
+    if cleanup_timer is not None:
+        cleanup_timer.cancel()
+    
+    def check_heartbeat():
+        global last_heartbeat
+        if last_heartbeat is not None:
+            elapsed = time.time() - last_heartbeat
+            if elapsed > heart_beat_timeout:
+                cleanup_session()
+    
+    cleanup_timer = threading.Timer(heart_beat_timeout + 1, check_heartbeat)
+    cleanup_timer.daemon = True
+    cleanup_timer.start()
 
 def get_time_remaining():
     if not contest_active or contest_start_time is None:
@@ -58,11 +94,22 @@ def get_time_remaining():
     remaining = max(0, contest_duration - elapsed)
     return int(remaining)
 
-# Start contest automatically when app starts
-start_contest()
+# Contest will start when user accesses the website
 
 def gen_frames():
-    global counter, status, contest_active
+    global counter, status, contest_active, cap, last_heartbeat
+    
+    # Initialize camera only when video feed is requested
+    if cap is None:
+        cap = cv2.VideoCapture(0)
+        cap.set(3, 800)
+        cap.set(4, 480)
+        print("Camera initialized - new session started")
+    
+    # Update heartbeat when video feed is active
+    last_heartbeat = time.time()
+    schedule_cleanup()
+    
     with mp_pose.Pose(min_detection_confidence=0.5,
                       min_tracking_confidence=0.5) as pose:
         while True:
@@ -105,6 +152,16 @@ def gen_frames():
 
 @app.route('/')
 def index():
+    global last_heartbeat, contest_active, contest_ended
+    # Start new session when someone visits the website
+    last_heartbeat = time.time()
+    
+    # If contest is not active or has ended, start a new one
+    if not contest_active or contest_ended:
+        start_contest()
+        print("New contest started for new session")
+    
+    schedule_cleanup()
     return render_template('index.html')
 
 @app.route('/video_feed')
@@ -115,7 +172,11 @@ def video_feed():
 
 @app.route('/stats')
 def stats():
-    global counter, participant_count
+    global counter, participant_count, last_heartbeat
+    # Update heartbeat when stats are requested (indicates active session)
+    last_heartbeat = time.time()
+    schedule_cleanup()
+    
     return jsonify({
         'counter': counter,
         'participants': participant_count,
@@ -124,9 +185,21 @@ def stats():
         'contest_ended': contest_ended
     })
 
+@app.route('/heartbeat', methods=['POST'])
+def heartbeat():
+    """Endpoint to keep session alive"""
+    global last_heartbeat
+    last_heartbeat = time.time()
+    schedule_cleanup()
+    return jsonify({'status': 'alive'})
+
 @app.route('/start_contest', methods=['POST'])
 def start_new_contest():
+    global last_heartbeat
+    # Reset session tracking
+    last_heartbeat = time.time()
     start_contest()
+    schedule_cleanup()
     return jsonify({'success': True, 'message': 'Contest started!'})
 
 @app.route('/contest_results')

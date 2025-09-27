@@ -373,6 +373,21 @@
     <script>
       let contestStartTime = Date.now();
       let lastSquatCount = 0;
+      let heartbeatInterval;
+
+      // Send heartbeat to keep session alive
+      async function sendHeartbeat() {
+        try {
+          await fetch("/heartbeat", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
+        } catch (e) {
+          console.log("Heartbeat failed", e);
+        }
+      }
 
       // Update all stats including timer and participant count
       async function updateStats() {
@@ -410,6 +425,10 @@
             statusElement.textContent = "Ended";
             statusElement.style.color = "#ff6b35";
             showContestEndedOverlay();
+            // Stop heartbeat when contest ends
+            if (heartbeatInterval) {
+              clearInterval(heartbeatInterval);
+            }
           } else if (data.contest_active) {
             statusElement.textContent = "Active";
             statusElement.style.color = "#00ff41";
@@ -441,8 +460,41 @@
         }
       };
 
-      // Start polling stats
-      updateStats();
+      // Handle page visibility changes (tab switching, minimizing)
+      document.addEventListener("visibilitychange", function() {
+        if (document.hidden) {
+          // Page is hidden, stop heartbeat
+          if (heartbeatInterval) {
+            clearInterval(heartbeatInterval);
+          }
+        } else {
+          // Page is visible again, restart heartbeat
+          heartbeatInterval = setInterval(sendHeartbeat, 5000);
+        }
+      });
+
+      // Handle page unload (browser/tab close)
+      window.addEventListener("beforeunload", function() {
+        // Clear heartbeat interval
+        if (heartbeatInterval) {
+          clearInterval(heartbeatInterval);
+        }
+      });
+
+      // Initialize session
+      function initializeSession() {
+        // Start heartbeat
+        heartbeatInterval = setInterval(sendHeartbeat, 5000);
+        
+        // Start polling stats
+        updateStats();
+        
+        // Send initial heartbeat
+        sendHeartbeat();
+      }
+
+      // Start the session when page loads
+      initializeSession();
     </script>
   </body>
 </html>
