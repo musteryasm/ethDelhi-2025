@@ -3,7 +3,7 @@ import ABI from "../../contractABI.json";
 
 const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
 const wallet = new ethers.Wallet(process.env.ADMIN_PRIVATE_KEY, provider);
-const contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, ABI, wallet);
+const contract = new ethers.Contract("0xd43dc5f84320B34149Be4D0602F862DdD61A45CF", ABI, wallet);
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -20,6 +20,7 @@ export default async function handler(req, res) {
       minParticipants,
     } = req.body;
 
+    // Send tx
     const tx = await contract.createContest(
       name,
       stakeAmount,
@@ -31,21 +32,26 @@ export default async function handler(req, res) {
 
     const receipt = await tx.wait();
 
-    // ✅ Get event topic hash for ContestCreated
-    const eventTopic = contract.interface.getEventTopic("ContestCreated");
-
+    // ✅ Parse logs for ContestCreated event
     let contestId = null;
     for (const log of receipt.logs) {
-      if (log.topics[0] === eventTopic) {
+      try {
         const parsed = contract.interface.parseLog(log);
-        contestId = parsed.args.contestId.toString();
-        break;
+        if (parsed.name === "ContestCreated") {
+          contestId = parsed.args.contestId.toString();
+          break;
+        }
+      } catch {
+        // ignore unrelated logs
       }
     }
 
     res.status(200).json({
-      txHash: receipt.hash,
+      txHash: receipt.transactionHash,
       contestId,
+      message: contestId
+        ? `Contest created with ID: ${contestId}`
+        : "Contest created (ID not found in logs)",
     });
   } catch (err) {
     console.error("Error creating contest:", err);
