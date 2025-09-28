@@ -1,539 +1,376 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Clock, Users, Play, Activity, Camera, Wallet } from "lucide-react";
+import { Clock, Users, Play, Activity, Camera, Wallet, Trophy, Zap, Crown, Star } from "lucide-react";
 import { ethers } from "ethers";
 import GlassCard from "../components/GlassCard";
 import NeonButton from "../components/NeonButton";
 import outputSquatGif from "../gifs/output_squat.gif";
+import { HARDCODED_CONTESTS, getTimeRemaining } from "../data/contests";
+import { API_CONFIG } from "../config/api";
 
-const CONTRACT_ADDRESS = "0xE5f2A565Ee0Aa9836B4c80a07C8b32aAd7978e22";
-const SEPOLIA_CHAIN_ID = "0xaa36a7";
-const CONTRACT_ABI = [
-  "function joinContest(uint256 contestId) external payable",
-  "function getParticipants(uint256 contestId) external view returns (address[])",
-  "function contests(uint256) external view returns (string memory name, uint256 stakeAmount, uint256 startTime, uint256 endTime, uint256 maxParticipants, uint256 minParticipants, bool rewardsDistributed)",
-  "event ContestCreated(uint256 indexed contestId, string name)",
-];
-
-const ChallengesPage = () => {
+const ChallengePage = () => {
   const [showContestModal, setShowContestModal] = useState(false);
   const [showCameraModal, setShowCameraModal] = useState(false);
-  const [selectedChallenge, setSelectedChallenge] = useState(null);
-  const [stakeInput, setStakeInput] = useState("");
-  const [isStarting, setIsStarting] = useState(false);
-  const [selectedContest, setSelectedContest] = useState<any | null>(null);
+  const [selectedContest, setSelectedContest] = useState(null);
+  const [account, setAccount] = useState("");
+  const [isConnected, setIsConnected] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [balance, setBalance] = useState("0");
+  const [isStaking, setIsStaking] = useState(false);
+  const [stakingStatus, setStakingStatus] = useState("");
+  const [contests, setContests] = useState(HARDCODED_CONTESTS);
 
-  const [account, setAccount] = useState(null);
-  const [contract, setContract] = useState(null);
-  const [contests, setContests] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [joining, setJoining] = useState(false);
-  const [userJoinedContests, setUserJoinedContests] = useState(new Set());
-
-  // Connect wallet function
+  // Connect to MetaMask
   const connectWallet = async () => {
-    try {
+    console.log("Connect wallet clicked!");
+    
       if (!window.ethereum) {
         alert("Please install MetaMask!");
         return;
       }
 
-      // Check if we're on Sepolia
-      const chainId = await window.ethereum.request({ method: "eth_chainId" });
-      console.log("Current Chain ID:", chainId);
+    try {
+      setIsConnecting(true);
+      console.log("Requesting accounts...");
+      const accounts = await window.ethereum.request({
+        method: "eth_requestAccounts",
+      });
 
-      if (chainId !== SEPOLIA_CHAIN_ID) {
+      if (accounts.length > 0) {
+        setAccount(accounts[0]);
+        setIsConnected(true);
+        
+        // Switch to Citrea Testnet first, then get balance
+        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+        if (chainId !== API_CONFIG.CHAIN_ID) {
+          await switchToCitreaNetwork();
+        }
+        
+        // Get balance with retry logic
         try {
-          await window.ethereum.request({
-            method: "wallet_switchEthereumChain",
-            params: [{ chainId: SEPOLIA_CHAIN_ID }],
-          });
-        } catch (switchError) {
-          if (switchError.code === 4902) {
-            // Chain not added to MetaMask
-            await window.ethereum.request({
-              method: "wallet_addEthereumChain",
-              params: [
-                {
-                  chainId: SEPOLIA_CHAIN_ID,
-                  chainName: "Sepolia Test Network",
-                  nativeCurrency: {
-                    name: "ETH",
-                    symbol: "ETH",
-                    decimals: 18,
-                  },
-                  rpcUrls: ["https://sepolia.infura.io/v3/"],
-                  blockExplorerUrls: ["https://sepolia.etherscan.io"],
-                },
-              ],
-            });
-          } else {
-            throw switchError;
-          }
+          const provider = new ethers.BrowserProvider(window.ethereum);
+          const balance = await provider.getBalance(accounts[0]);
+          setBalance(ethers.formatEther(balance));
+        } catch (balanceError) {
+          console.warn("Could not fetch balance:", balanceError);
+          setBalance("0.0000"); // Set default balance
         }
       }
-
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const accounts = await provider.send("eth_requestAccounts", []);
-      const signer = await provider.getSigner();
-      const contractInstance = new ethers.Contract(
-        CONTRACT_ADDRESS,
-        CONTRACT_ABI,
-        signer
-      );
-
-      setAccount(accounts[0]);
-      setContract(contractInstance);
-
-      console.log("✅ Wallet connected:", accounts[0]);
-      console.log("✅ Contract instance created");
-
-      // Check which contests user has joined
-      await checkUserJoinedContests(accounts[0]);
     } catch (error) {
       console.error("Error connecting wallet:", error);
-      alert("Failed to connect wallet: " + error.message);
-    }
-  };
-
-  // Fetch contests from backend API
-  const fetchContests = async () => {
-    console.log("🔄 Fetching contests from API...");
-
-    try {
-      setLoading(true);
-      const response = await fetch("http://localhost:3000/api/contests");
-
-      console.log("📡 API Response Status:", response.status);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log("📊 API Response Data:", data);
-
-      if (data.contests && Array.isArray(data.contests)) {
-        console.log(`✅ Found ${data.contests.length} contests from API`);
-        setContests(data.contests);
+      
+      // Handle specific MetaMask errors
+      if (error.code === -32603 && error.data?.cause?.isBrokenCircuitError) {
+        alert("MetaMask circuit breaker is open. Please wait a moment and try again, or refresh the page.");
+      } else if (error.code === 4001) {
+        alert("Connection rejected by user");
       } else {
-        console.warn("⚠️ API response missing contests array");
-        throw new Error("Invalid API response format");
+        alert(`Failed to connect wallet: ${error.message}`);
       }
-    } catch (error) {
-      console.error("❌ Error fetching contests from API:", error);
-      console.log("🔄 Using fallback data...");
-
-      // Fallback to static data if API fails
-      const fallbackContests = [
-        {
-          id: 0,
-          name: "Core Foundation Plank",
-          stakeAmount: "10000000000", // 0.1 ETH in wei
-          startTime: Math.floor(Date.now() / 1000),
-          endTime: Math.floor(Date.now() / 1000) + 30 * 24 * 3600,
-          maxParticipants: 100,
-          minParticipants: 5,
-          participantCount: 23,
-          difficulty: "Medium",
-          rewardsDistributed: false,
-        },
-        {
-          id: 1,
-          name: "Simple Stretch & Reach",
-          stakeAmount: "70000000000", // 0.05 ETH in wei
-          startTime: Math.floor(Date.now() / 1000),
-          endTime: Math.floor(Date.now() / 1000) + 14 * 24 * 3600,
-          maxParticipants: 50,
-          minParticipants: 5,
-          participantCount: 12,
-          difficulty: "Easy",
-          rewardsDistributed: false,
-        },
-        {
-          id: 2,
-          name: "Squat it",
-          stakeAmount: "10000000000", // 0.1 ETH in wei
-          startTime: Math.floor(Date.now() / 1000),
-          endTime: Math.floor(Date.now() / 1000) + 30 * 24 * 3600,
-          maxParticipants: 100,
-          minParticipants: 5,
-          participantCount: 23,
-          difficulty: "Medium",
-          rewardsDistributed: false,
-        },
-        {
-          id: 3,
-          name: "Monk mode meditate",
-          stakeAmount: "60000000000", // 0.05 ETH in wei
-          startTime: Math.floor(Date.now() / 1000),
-          endTime: Math.floor(Date.now() / 1000) + 14 * 24 * 3600,
-          maxParticipants: 50,
-          minParticipants: 5,
-          participantCount: 12,
-          difficulty: "Easy",
-          rewardsDistributed: false,
-        },
-      ];
-
-      console.log("📋 Fallback contests loaded:", fallbackContests);
-      setContests(fallbackContests);
     } finally {
-      setLoading(false);
+      setIsConnecting(false);
     }
   };
 
-  // Check which contests user has joined
-  const checkUserJoinedContests = async (userAddress) => {
-    const joinedSet = new Set();
-
-    for (const contest of contests) {
-      try {
-        const response = await fetch(
-          `http://localhost:3000/api/contests/${contest.id}/joined/${userAddress}`
-        );
-        const data = await response.json();
-
-        if (data.hasJoined) {
-          joinedSet.add(contest.id);
+  // Switch to Citrea Testnet
+  const switchToCitreaNetwork = async () => {
+    try {
+      await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: API_CONFIG.CHAIN_ID }],
+      });
+    } catch (switchError) {
+      if (switchError.code === 4902) {
+        try {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: API_CONFIG.CHAIN_ID,
+              chainName: 'Citrea Testnet',
+              nativeCurrency: {
+                name: 'Citrea',
+                symbol: 'CBTC',
+                decimals: 18,
+              },
+              rpcUrls: [API_CONFIG.RPC_URL],
+              blockExplorerUrls: ['https://explorer.testnet.citrea.xyz'],
+            }],
+          });
+        } catch (addError) {
+          console.error('Failed to add Citrea network:', addError);
+          alert('Please add Citrea Testnet manually in MetaMask');
         }
-      } catch (error) {
-        console.error(
-          `Error checking join status for contest ${contest.id}:`,
-          error
-        );
       }
     }
-
-    setUserJoinedContests(joinedSet);
   };
 
-  // Join contest function
-  const joinContest = async (contest) => {
-    setSelectedChallenge(contest);
-    if (!contract || !account) {
-      alert("Please connect your wallet first");
+  // Stake in contest
+  const stakeInContest = async (contest) => {
+    if (!isConnected) {
+      alert("Please connect your wallet first!");
       return;
     }
 
-    console.log("🔍 Debug Info:");
-    console.log("Contest:", contest);
-    console.log("Contest ID:", contest.id);
-    console.log("Stake Amount (wei):", contest.stakeAmount);
-    console.log("Account:", account);
-    console.log("Current Time:", Math.floor(Date.now() / 1000));
-    console.log("Start Time:", contest.startTime);
-    console.log("End Time:", contest.endTime);
-
     try {
-      setJoining(true);
+      setIsStaking(true);
+      setStakingStatus("Preparing transaction...");
+      
+      // Skip balance check for now due to RPC issues
+      // Just proceed with the transaction and let MetaMask handle it
+      setStakingStatus("Please confirm transaction in MetaMask...");
 
-      // Pre-flight validation checks
-      const currentTime = Math.floor(Date.now() / 1000);
-
-      if (currentTime < parseInt(contest.startTime)) {
-        alert("Contest has not started yet");
-        return;
-      }
-
-      if (currentTime > parseInt(contest.endTime)) {
-        alert("Contest has already ended");
-        return;
-      }
-
-      // Check balance
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const balance = await provider.getBalance(account);
-      const requiredAmount = BigInt(contest.stakeAmount);
-
-      console.log("User Balance (ETH):", ethers.formatEther(balance));
-      console.log("Required Amount (ETH):", ethers.formatEther(requiredAmount));
-
-      if (balance < requiredAmount) {
-        alert(
-          `Insufficient balance. You have ${ethers.formatEther(
-            balance
-          )} ETH but need ${ethers.formatEther(requiredAmount)} ETH`
-        );
-        return;
-      }
-
-      // Get current gas price and estimate gas
-      const gasPrice = await provider.send("eth_gasPrice", []);
-      console.log("Gas Price:", gasPrice);
-
-      try {
-        // Try to estimate gas first
-        const estimatedGas = await contract.joinContest.estimateGas(
-          contest.id,
-          {
-            value: contest.stakeAmount,
+      // Create transaction using window.ethereum directly to avoid RPC issues
+      const txParams = {
             from: account,
-          }
-        );
-        console.log("Estimated Gas:", estimatedGas.toString());
-      } catch (gasError) {
-        console.error("Gas estimation failed:", gasError);
+        to: API_CONFIG.CONTRACT_ADDRESS,
+        value: `0x${BigInt(contest.stakeAmount).toString(16)}`,
+        data: `0x5d6e6c7c${contest.id.toString(16).padStart(64, '0')}`, // joinContest function call
+        gas: "0x30d40" // 200000 in hex
+      };
 
-        // Try to get more specific error by calling as view function
-        try {
-          const contractRead = new ethers.Contract(
-            CONTRACT_ADDRESS,
-            [
-              ...CONTRACT_ABI,
-              "function contests(uint256) external view returns (string memory, uint256, uint256, uint256, uint256, uint256, bool)",
-            ],
-            provider
-          );
-
-          const contestData = await contractRead.contests(contest.id);
-          console.log("Contract contest data:", contestData);
-
-          if (!contestData || contestData[0] === "") {
-            alert(
-              "Contest does not exist on the blockchain. Please check if it was created properly."
-            );
-            return;
-          }
-        } catch (readError) {
-          console.error("Failed to read contract:", readError);
-          alert(
-            "Contract interaction failed. Please check if you are on the correct network (Sepolia)."
-          );
-          return;
-        }
-
-        // If we can't estimate gas, show specific error
-        alert("Transaction will likely fail. Check console for details.");
-        return;
-      }
-
-      // Call smart contract to join contest
-      console.log("🚀 Sending transaction...");
-      const tx = await contract.joinContest(contest.id, {
-        value: contest.stakeAmount,
-        gasLimit: 300000, // Add explicit gas limit
+      // Send transaction
+      const txHash = await window.ethereum.request({
+        method: 'eth_sendTransaction',
+        params: [txParams]
       });
 
-      console.log("Transaction sent:", tx.hash);
+      setStakingStatus("Transaction submitted, waiting for confirmation...");
+      console.log("Transaction hash:", txHash);
 
-      // Wait for confirmation
-      const receipt = await tx.wait();
-      console.log("Transaction confirmed:", receipt);
+      // Wait for confirmation using a simple approach
+      let receipt = null;
+      let attempts = 0;
+      const maxAttempts = 30; // 30 seconds max wait
 
-      console.log("Successfully joined contest!");
-
-      // Update local state
-      setUserJoinedContests((prev) => new Set([...prev, contest.id]));
-
-      // Refresh contest data
-      await fetchContests();
-
-      alert("Successfully joined contest!");
-    } catch (error) {
-      console.error("Error joining contest:", error);
-
-      let errorMessage = "Failed to join contest: ";
-
-      if (error.message.includes("user rejected")) {
-        errorMessage += "Transaction cancelled by user";
-      } else if (error.message.includes("insufficient funds")) {
-        errorMessage += "Insufficient ETH balance";
-      } else if (error.message.includes("Already joined")) {
-        errorMessage += "You have already joined this contest";
-      } else if (error.message.includes("Contest not started")) {
-        errorMessage += "Contest has not started yet";
-      } else if (error.message.includes("Contest ended")) {
-        errorMessage += "Contest has already ended";
-      } else if (error.message.includes("Incorrect stake")) {
-        errorMessage += "Incorrect stake amount";
-      } else if (error.message.includes("Contest full")) {
-        errorMessage += "Contest is full";
-      } else if (error.message.includes("Invalid contest")) {
-        errorMessage += "Contest does not exist";
-      } else if (error.code === "CALL_EXCEPTION") {
-        errorMessage +=
-          "Contract call failed. Check if contest exists and you meet all requirements.";
-      } else {
-        errorMessage += error.message;
+      while (!receipt && attempts < maxAttempts) {
+        try {
+          receipt = await window.ethereum.request({
+            method: 'eth_getTransactionReceipt',
+            params: [txHash]
+          });
+          if (!receipt) {
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+            attempts++;
+          }
+        } catch (error) {
+          console.warn("Error checking transaction receipt:", error);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          attempts++;
+        }
       }
 
-      alert(errorMessage);
+      if (receipt) {
+      console.log("Transaction confirmed:", receipt);
+        setStakingStatus("Success! You've joined the contest!");
+        
+        // Update contest participant count
+        setContests(prevContests => 
+          prevContests.map(c => 
+            c.id === contest.id 
+              ? { ...c, participantCount: c.participantCount + 1 }
+              : c
+          )
+        );
+
+        // Close modal after success
+        setTimeout(() => {
+          setShowContestModal(false);
+          setStakingStatus("");
+        }, 2000);
+      } else {
+        setStakingStatus("Transaction submitted but confirmation timed out. Check your wallet for status.");
+      }
+
+    } catch (error) {
+      console.error("Error staking:", error);
+      
+      if (error.code === 4001) {
+        setStakingStatus("Transaction rejected by user");
+      } else if (error.code === -32603) {
+        setStakingStatus("Insufficient funds for gas or transaction failed");
+      } else {
+        setStakingStatus(`Error: ${error.message}`);
+      }
     } finally {
-      setJoining(false);
-      setShowContestModal(true);
+      setIsStaking(false);
     }
   };
 
-  // Helper function to format difficulty badge
-  const getDifficultyColor = (difficulty) => {
-    switch (difficulty?.toLowerCase()) {
-      case "easy":
-        return "bg-green-900 text-green-300";
-      case "medium":
-        return "bg-yellow-900 text-yellow-300";
-      case "hard":
-        return "bg-red-900 text-red-300";
-      default:
-        return "bg-gray-900 text-gray-300";
-    }
+  // Open contest modal
+  const openContestModal = (contest) => {
+    setSelectedContest(contest);
+    setShowContestModal(true);
+    setStakingStatus("");
   };
 
-  // Helper function to format time
-  const formatTime = (timestamp) => {
-    return new Date(parseInt(timestamp) * 1000).toLocaleDateString();
-  };
-
-  // Helper function to convert wei to ETH
-  const formatStake = (stakeAmount) => {
-    try {
-      return ethers.formatEther(stakeAmount) + " ETH";
-    } catch {
-      return stakeAmount;
+  // Get contest icon
+  const getContestIcon = (contest) => {
+    switch (contest.id) {
+      case 1: return <Zap className="w-6 h-6 text-green-500" />;
+      case 2: return <Activity className="w-6 h-6 text-blue-500" />;
+      case 3: return <Trophy className="w-6 h-6 text-purple-500" />;
+      case 4: return <Crown className="w-6 h-6 text-yellow-500" />;
+      default: return <Star className="w-6 h-6 text-cyber-green" />;
     }
   };
-
-  // Load contests on component mount
-  useEffect(() => {
-    fetchContests();
-  }, []);
-
-  // Check join status when account changes
-  useEffect(() => {
-    if (account && contests.length > 0) {
-      checkUserJoinedContests(account);
-    }
-  }, [account, contests]);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-cyber-green">Loading contests...</div>
-      </div>
-    );
-  }
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <h2 className="font-orbitron text-3xl font-bold text-cyber-green">
-          AI Personalized Challenges
-        </h2>
-        <div className="flex items-center space-x-4">
-          <div className="text-sm text-gray-400">
-            Total Contests:{" "}
-            <span className="text-cyber-green font-bold">
-              {contests.length}
-            </span>
-          </div>
-          {account ? (
-            <div className="text-sm text-cyber-green">
-              Connected: {account.substring(0, 6)}...{account.substring(38)}
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center mb-12">
+          <motion.h1
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="font-orbitron text-5xl font-bold text-cyber-green mb-4"
+          >
+            🏆 Fitness Challenges
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-xl text-gray-300 mb-8"
+          >
+            Join contests, stake CBTC, and win rewards!
+          </motion.p>
+
+          {/* Wallet Connection */}
+          <div className="flex justify-center gap-4 mb-8">
+            {!isConnected ? (
+              <NeonButton
+                onClick={connectWallet}
+                disabled={isConnecting}
+                className="px-8 py-3"
+              >
+                {isConnecting ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-cyber-green border-t-transparent rounded-full animate-spin" />
+                    Connecting...
             </div>
           ) : (
-            <NeonButton onClick={connectWallet} size="sm">
-              <Wallet className="w-4 h-4 mr-2" />
+                  <div className="flex items-center gap-2">
+                    <Wallet className="w-5 h-5" />
               Connect Wallet
+                  </div>
+                )}
             </NeonButton>
+            ) : (
+              <div className="flex items-center gap-4 glass rounded-lg px-6 py-3">
+                <div className="flex items-center gap-2 text-cyber-green">
+                  <div className="w-2 h-2 bg-cyber-green rounded-full animate-pulse" />
+                  Connected
+                </div>
+                <div className="text-white">
+                  {account.slice(0, 6)}...{account.slice(-4)}
+                </div>
+                <div className="text-gray-300">
+                  {parseFloat(balance).toFixed(4)} CBTC
+                </div>
+              </div>
           )}
         </div>
       </div>
 
-      {/* Contest Grid */}
-      <div className="grid md:grid-cols-2 gap-6">
-        {contests.map((contest) => {
-          const hasJoined = userJoinedContests.has(contest.id);
-          const isActive =
-            parseInt(contest.startTime) <= Date.now() / 1000 &&
-            parseInt(contest.endTime) > Date.now() / 1000;
+        {/* Contests Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {contests.map((contest, index) => (
+            <motion.div
+              key={contest.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+            >
+              <GlassCard className="h-full cursor-pointer hover:scale-105 transition-all duration-300">
+                <div className="h-full flex flex-col">
+                  {/* Contest Header */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-12 h-12 bg-cyber-green/20 rounded-lg flex items-center justify-center">
+                      {getContestIcon(contest)}
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm text-gray-400">Difficulty</div>
+                      <div className="font-semibold text-cyber-green">{contest.difficulty}</div>
+                    </div>
+                  </div>
 
-          return (
-            <GlassCard key={contest.id} glowEffect>
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="font-orbitron text-xl font-bold text-white mb-2">
+                  {/* Contest Info */}
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-cyber-green mb-2">
                     {contest.name}
                   </h3>
+                    <p className="text-gray-300 text-sm mb-4">
+                      {contest.description}
+                    </p>
 
-                  {/* Contest Status */}
-                  <div className="mt-2">
-                    <span
-                      className={`px-2 py-1 rounded text-xs ${
-                        isActive
-                          ? "bg-green-900 text-green-300"
-                          : "bg-gray-900 text-gray-300"
-                      }`}
-                    >
-                      {isActive ? "Active" : "Upcoming"}
+                    {/* Stats */}
+                    <div className="space-y-2 mb-4">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400 flex items-center">
+                          <Wallet className="w-4 h-4 mr-1" />
+                          Stake:
+                        </span>
+                        <span className="text-white font-semibold">
+                          {contest.stakeAmountDisplay} CBTC
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400 flex items-center">
+                          <Users className="w-4 h-4 mr-1" />
+                          Participants:
+                        </span>
+                        <span className="text-white">
+                          {contest.participantCount}/{contest.maxParticipants}
+                      </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400 flex items-center">
+                      <Clock className="w-4 h-4 mr-1" />
+                          Duration:
+                        </span>
+                        <span className="text-white">{contest.duration}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400 flex items-center">
+                          <Trophy className="w-4 h-4 mr-1" />
+                          Prize Pool:
+                    </span>
+                        <span className="text-cyber-green font-semibold">
+                          {contest.prizePool}
+                    </span>
+                  </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400 flex items-center">
+                          <Activity className="w-4 h-4 mr-1" />
+                          Time Left:
+                        </span>
+                        <span className="text-white">
+                          {getTimeRemaining(contest.endTime)}
                     </span>
                   </div>
                 </div>
-
-                <div className="text-right">
-                  <div className="text-cyber-green font-bold text-lg">
-                    {formatStake(contest.stakeAmount)}
                   </div>
-                  <div className="text-xs text-gray-400">Stake Required</div>
-                </div>
-              </div>
 
-              <div className="flex space-x-3">
-                {hasJoined ? (
-                  <>
-                    <NeonButton
-                      size="sm"
-                      className="flex-1 bg-green-900 border-green-500"
-                      disabled
-                    >
-                      ✅ Joined
-                    </NeonButton>
-                    <NeonButton
-                      size="sm"
-                      onClick={() => {
-                        setSelectedChallenge(contest);
-                        setStakeInput(formatStake(contest.stakeAmount));
-                        setShowCameraModal(true);
-                      }}
-                    >
-                      <Activity className="w-4 h-4 mr-2" />
-                      Start Exercise
-                    </NeonButton>
-                  </>
-                ) : (
-                  <>
-                    <NeonButton
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => joinContest(contest)}
-                      disabled={!account || joining || !isActive}
-                    >
-                      {joining ? (
-                        "Joining..."
-                      ) : !account ? (
-                        "Connect Wallet"
-                      ) : !isActive ? (
-                        "Not Active"
-                      ) : (
-                        <>
-                          <Play className="w-4 h-4 mr-2" />
-                          Join Contest
-                        </>
-                      )}
-                    </NeonButton>
-                    <NeonButton size="sm" variant="secondary">
-                      View Details
-                    </NeonButton>
-                  </>
-                )}
+                  {/* Action Button */}
+                  <NeonButton
+                    onClick={() => openContestModal(contest)}
+                    className="w-full mt-auto"
+                    disabled={!isConnected}
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <Play className="w-4 h-4" />
+                      {isConnected ? "Join Contest" : "Connect to Join"}
+                    </div>
+                  </NeonButton>
+                </div>
+              </GlassCard>
+            </motion.div>
+          ))}
               </div>
-            </GlassCard>
-          );
-        })}
       </div>
 
       {/* Contest Modal */}
-      {showContestModal && (
+      {showContestModal && selectedContest && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -542,10 +379,10 @@ const ChallengesPage = () => {
           <GlassCard className="max-w-xl w-full max-h-[70vh] overflow-y-auto">
             <div className="text-center mb-6">
               <h3 className="font-orbitron text-2xl font-bold text-cyber-green mb-2">
-                {selectedContest?.name ?? "Contest Details"}
+                {selectedContest.name}
               </h3>
               <p className="text-gray-300 mb-4">
-                {selectedContest?.description ?? "Get ready to compete!"}
+                {selectedContest.description}
               </p>
             </div>
 
@@ -569,55 +406,80 @@ const ChallengesPage = () => {
 
             {selectedContest && (
               <div className="mb-6">
-                <h4 className="font-orbitron text-lg font-bold text-white mb-3">
-                  Contest Rules
-                </h4>
-                <div className="space-y-2">
-                  {selectedContest.rules.map((rule: string, index: number) => (
-                    <div
-                      key={index}
-                      className="flex items-center text-sm text-gray-300"
-                    >
-                      <Target className="w-4 h-4 mr-2 text-cyber-green flex-shrink-0" />
-                      {rule}
+                <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+                  <div className="glass rounded-lg p-3">
+                    <div className="text-gray-400">Stake Amount</div>
+                    <div className="text-cyber-green font-semibold">
+                      {selectedContest.stakeAmountDisplay} CBTC
                     </div>
-                  ))}
+                  </div>
+                  <div className="glass rounded-lg p-3">
+                    <div className="text-gray-400">Prize Pool</div>
+                    <div className="text-cyber-green font-semibold">
+                      {selectedContest.prizePool}
+                    </div>
+                  </div>
+                  <div className="glass rounded-lg p-3">
+                    <div className="text-gray-400">Participants</div>
+                    <div className="text-white">
+                      {selectedContest.participantCount}/{selectedContest.maxParticipants}
+                    </div>
+                  </div>
+                  <div className="glass rounded-lg p-3">
+                    <div className="text-gray-400">Duration</div>
+                    <div className="text-white">{selectedContest.duration}</div>
+                  </div>
+                </div>
+
+                {/* Staking Status */}
+                {stakingStatus && (
+                  <div className={`glass rounded-lg p-3 mb-4 ${
+                    stakingStatus.includes("Success") 
+                      ? "border-cyber-green" 
+                      : stakingStatus.includes("failed") || stakingStatus.includes("Error")
+                      ? "border-red-500"
+                      : "border-blue-500"
+                  }`}>
+                    <div className={`text-center ${
+                      stakingStatus.includes("Success") 
+                        ? "text-cyber-green" 
+                        : stakingStatus.includes("failed") || stakingStatus.includes("Error")
+                        ? "text-red-400"
+                        : "text-blue-400"
+                    }`}>
+                      {stakingStatus}
                 </div>
               </div>
             )}
 
-            <div className="space-y-4">
-              <div className="flex items-center space-x-3"></div>
-
-              <div className="flex space-x-4">
+                {/* Action Buttons */}
+                <div className="flex gap-3">
                 <NeonButton
-                  className="flex-1"
-                  onClick={async () => {
-                    try {
-                      setIsStarting(true);
-                      // Open the detection interface
-                      window.open("http://localhost:5001/", "_blank");
-                      setShowContestModal(false);
-                    } catch (err) {
-                      console.error(err);
-                    } finally {
-                      setIsStarting(false);
-                    }
-                  }}
-                >
-                  <Activity className="w-4 h-4 mr-2" />
-                  {isStarting ? "Starting..." : "Start Contest"}
-                </NeonButton>
-                <NeonButton
-                  variant="secondary"
-                  onClick={() => {
-                    setShowContestModal(false);
-                  }}
+                    onClick={() => setShowContestModal(false)}
+                    className="flex-1 bg-gray-700 hover:bg-gray-600"
                 >
                   Cancel
                 </NeonButton>
+                  <NeonButton
+                    onClick={() => stakeInContest(selectedContest)}
+                    disabled={isStaking || !isConnected}
+                    className="flex-1"
+                  >
+                    {isStaking ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-cyber-green border-t-transparent rounded-full animate-spin" />
+                        Staking...
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Wallet className="w-4 h-4" />
+                        Stake {selectedContest.stakeAmountDisplay} CBTC
+                      </div>
+                    )}
+                  </NeonButton>
+                </div>
               </div>
-            </div>
+            )}
           </GlassCard>
         </motion.div>
       )}
@@ -625,4 +487,4 @@ const ChallengesPage = () => {
   );
 };
 
-export default ChallengesPage;
+export default ChallengePage;

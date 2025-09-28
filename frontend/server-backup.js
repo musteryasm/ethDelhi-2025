@@ -39,9 +39,21 @@ function getContract() {
 // Helper function to get contest data and participants
 async function getContestData(contestId) {
   const contract = getContract();
-  const contestData = await contract.contests(contestId);
+  const contestData = await contract.getContest(contestId);
   const participants = await contract.getParticipants(contestId);
-  return { contestData, participants };
+  
+  // Format the returned data to match expected structure
+  const formattedContestData = {
+    name: contestData[0],
+    stakeAmount: contestData[1],
+    startTime: contestData[2],
+    endTime: contestData[3],
+    maxParticipants: contestData[4],
+    minParticipants: contestData[5],
+    rewardsDistributed: contestData[6]
+  };
+  
+  return { contestData: formattedContestData, participants };
 }
 
 // Helper function to check if contest is active
@@ -253,10 +265,10 @@ app.get('/api/contests/:id', async (req, res) => {
 app.get('/api/contests', async (req, res) => {
   try {
     // This is a simple implementation - in production you might want to store contest count
-    // For now, we'll try to get contests 0-9 and filter out empty ones
+    // For now, we'll try to get contests 1-10 and filter out empty ones
     const contests = [];
     
-    for (let i = 0; i < 10; i++) {
+    for (let i = 1; i <= 10; i++) {
       try {
         const { contestData, participants } = await getContestData(i);
         if (contestData.name && contestData.name !== '') {
@@ -832,7 +844,7 @@ app.get('/api/users/:address/contests', async (req, res) => {
     const userContests = [];
     
     // Check first 10 contests (in production, you'd have a better indexing system)
-    for (let i = 0; i < 10; i++) {
+    for (let i = 1; i <= 10; i++) {
       try {
         const { contestData, participants } = await getContestData(i);
         if (participants.includes(address)) {

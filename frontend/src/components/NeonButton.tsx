@@ -41,7 +41,7 @@ const NeonButton = ({
       {...(props as HTMLMotionProps<"button">)} // <-- cast props to HTMLMotionProps
     >
       <motion.div
-        className="absolute inset-0 bg-cyber-green opacity-0 hover:opacity-20 transition-opacity duration-300"
+        className="absolute inset-0 bg-cyber-green opacity-0 hover:opacity-20 transition-opacity duration-300 pointer-events-none"
         initial={false}
         animate={{ opacity: 0 }}
         whileHover={{ opacity: 0.2 }}
